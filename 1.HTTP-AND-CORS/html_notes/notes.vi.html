@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/http.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
 
   <style>
     :root{
@@ -450,6 +451,10 @@
       color: #d8b66a;
     }
 
+    .lang-cs {
+      color: #9d7cd8;
+    }
+
     .code-panel {
       display: none;
     }
@@ -830,11 +835,11 @@ body{padding-bottom:80px;}
       <header class="hero">
         <div class="kicker">Tài liệu kỹ thuật backend chuyên sâu</div>
         <h1>HTTP, <em>giao thức</em><br>mà máy chủ vận hành.</h1>
-        <p class="lede">Phân tích từ nguyên lý gốc (first principles) về giao thức tầng ứng dụng mà mọi kỹ sư backend đều tương tác hàng ngày: từ tính phi trạng thái (statelessness), ngữ nghĩa của các method, đến caching, request có điều kiện, proxy và TLS. Giải thích tường tận không chỉ <em>cách hoạt động</em> mà còn <em>vì sao</em> nó tồn tại và vận hành ở tầng dưới. Đi kèm code mẫu thực tế bằng cả Go và Python, đối chiếu trực tiếp với MDN và chuẩn RFC 9110.</p>
+        <p class="lede">Phân tích từ nguyên lý gốc (first principles) về giao thức tầng ứng dụng mà mọi kỹ sư backend đều tương tác hàng ngày: từ tính phi trạng thái (statelessness), ngữ nghĩa của các method, đến caching, request có điều kiện, proxy và TLS. Giải thích tường tận không chỉ <em>cách hoạt động</em> mà còn <em>vì sao</em> nó tồn tại và vận hành ở tầng dưới. Đi kèm code mẫu thực tế bằng Go, Python và C# .NET 8, đối chiếu trực tiếp với MDN và chuẩn RFC 9110.</p>
         <div class="meta">
           <span>Layer 7 / Application</span>
           <span>TCP / QUIC</span>
-          <span>Go 1.22+ / Python 3.11+</span>
+          <span>Go 1.22+ / Python 3.11+ / C# .NET 8</span>
           <span>21 phần nội dung</span>
         </div>
         <div class="rule"></div>
@@ -1337,7 +1342,7 @@ Date: Sat, 30 May 2026 12:00:00 GMT
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">package main
@@ -1391,6 +1396,32 @@ def create_note(note: Note, response: Response):
     return {"id": 42, **note.model_dump()}
 
 # chạy: uvicorn main:app --port 8080</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8 (ASP.NET Core Minimal APIs)
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.MapPost(&quot;/api/v1/notes&quot;, async (HttpContext ctx) =&gt; {
+    // 1. Đọc và giải mã JSON từ request body
+    var note = await ctx.Request.ReadFromJsonAsync&lt;Note&gt;();
+    if (note is null) {
+        return Results.BadRequest(&quot;invalid JSON&quot;);
+    }
+
+    // 2. Thiết lập Header ĐẦU TIÊN
+    ctx.Response.Headers.ContentType = &quot;application/json&quot;;
+    // 3. Ghi status code
+    ctx.Response.StatusCode = StatusCodes.Status201Created;
+    // 4. Ghi body CUỐI CÙNG (tuân thủ bất biến: Header -&gt; Status -&gt; Body)
+    note = note with { Id = 42 };
+    await ctx.Response.WriteAsJsonAsync(note);
+    return Results.Empty;
+});
+
+app.Run();
+
+record Note(int Id, string Title, bool Done);</code></pre>
           </div>
         </div>
       </section>
@@ -1577,7 +1608,7 @@ def create_note(note: Note, response: Response):
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">func securityHeaders(next http.Handler) http.Handler {
@@ -1605,6 +1636,22 @@ class SecurityHeaders(BaseHTTPMiddleware):
         return resp
 
 app.add_middleware(SecurityHeaders)</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Custom Middleware thiết lập Security Headers
+var app = WebApplication.Create(args);
+
+app.Use(async (context, next) =&gt; {
+    var headers = context.Response.Headers;
+    headers.StrictTransportSecurity = &quot;max-age=31536000; includeSubDomains&quot;;
+    headers[&quot;Content-Security-Policy&quot;] = &quot;default-src &#x27;self&#x27;&quot;;
+    headers.XFrameOptions = &quot;DENY&quot;;
+    headers.XContentTypeOptions = &quot;nosniff&quot;;
+
+    await next(context); // Headers PHẢI được thiết lập trước khi response bắt đầu ghi body
+});
+
+app.Run();</code></pre>
           </div>
         </div>
       </section>
@@ -1988,7 +2035,7 @@ app.add_middleware(SecurityHeaders)</code></pre>
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">mux := http.NewServeMux()
@@ -2035,6 +2082,25 @@ def patch_note(id: int, patch: dict): ...
 
 @app.delete("/notes/{id}", status_code=204)     # Xoá (idempotent)
 def delete_note(id: int): ...</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8 (Minimal APIs): Gắn kết HTTP methods với handlers
+var app = WebApplication.Create(args);
+
+// Đọc an toàn, có thể cache (safe, cacheable). Tự động hỗ trợ HEAD cho route GET
+app.MapGet(&quot;/notes&quot;, (bool? done, int limit = 20) =&gt; ListNotes(done, limit));
+
+app.MapGet(&quot;/notes/{id:int}&quot;, (int id) =&gt; {
+    var note = db.Find(id);
+    return note is not null ? Results.Ok(note) : Results.NotFound(); // 200 hoặc 404
+});
+
+app.MapPost(&quot;/notes&quot;, (Note note) =&gt; Results.Created($&quot;/notes/{note.Id}&quot;, note));  // Tạo mới (201)
+app.MapPut(&quot;/notes/{id:int}&quot;, (int id, Note note) =&gt; Results.Ok(PutNote(id, note))); // Thay thế toàn bộ (idempotent)
+app.MapPatch(&quot;/notes/{id:int}&quot;, (int id, JsonPatch patch) =&gt; Results.Ok());          // Cập nhật một phần
+app.MapDelete(&quot;/notes/{id:int}&quot;, (int id) =&gt; Results.NoContent());                    // Xóa (204, idempotent)
+
+app.Run();</code></pre>
           </div>
         </div>
       </section>
@@ -2145,7 +2211,7 @@ def delete_note(id: int): ...</code></pre>
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">var seen sync.Map // key -> []byte result. Trong thực tế production hãy dùng Redis kèm TTL.
@@ -2179,6 +2245,24 @@ def create_payment(payload: dict, idempotency_key: str = Header(...)):
     result = charge(payload)             # Xử lý nghiệp vụ thực tế (non-idempotent)
     seen[idempotency_key] = result       # Ghi nhớ kết quả TRƯỚC KHI phản hồi
     return result</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Xử lý Idempotency-Key chống thanh toán trùng lặp
+var seen = new ConcurrentDictionary&lt;string, object&gt;(); // Trong production hãy dùng IDistributedCache (Redis) kèm TTL
+
+app.MapPost(&quot;/payments&quot;, (HttpContext ctx, PaymentRequest req) =&gt; {
+    if (!ctx.Request.Headers.TryGetValue(&quot;Idempotency-Key&quot;, out var key) || string.IsNullOrEmpty(key)) {
+        return Results.BadRequest(&quot;missing Idempotency-Key&quot;);
+    }
+
+    if (seen.TryGetValue(key!, out var cachedResult)) {
+        return Results.Ok(cachedResult); // Replay: trả về kết quả đã lưu trước đó
+    }
+
+    var result = Charge(req);            // Xử lý nghiệp vụ thực tế (non-idempotent)
+    seen.TryAdd(key!, result);           // Ghi nhớ kết quả TRƯỚC KHI phản hồi
+    return Results.Created($&quot;/payments/{key}&quot;, result);
+});</code></pre>
           </div>
         </div>
         <p>Idempotency key giúp bảo vệ hệ thống trước nguy cơ <em>thực thi trùng lặp</em> (duplicate execution). Một hiểm họa khác có
@@ -2320,7 +2404,7 @@ Cookie: session=abc123</code></pre>
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">// Thiết lập session cookie bảo mật sau khi đăng nhập (stateful)
@@ -2379,6 +2463,27 @@ def require_token(cred: HTTPAuthorizationCredentials = Depends(bearer)):
 @app.get("/me")
 def me(_=Depends(require_token)):
     return {"ok": True}</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8:
+// 1. Thiết lập session cookie bảo mật sau đăng nhập (stateful)
+app.MapPost(&quot;/login&quot;, (HttpContext ctx) =&gt; {
+    var sid = Guid.NewGuid().ToString(&quot;N&quot;);
+    sessions[sid] = userId; // Session store phía server (Redis/Database)
+
+    ctx.Response.Cookies.Append(&quot;session&quot;, sid, new CookieOptions {
+        HttpOnly = true,                         // JS không thể đọc (chống XSS)
+        Secure = true,                           // Chỉ truyền qua HTTPS
+        SameSite = SameSiteMode.Strict,          // Phòng chống CSRF
+        MaxAge = TimeSpan.FromHours(1),
+        Path = &quot;/&quot;
+    });
+    return Results.Ok();
+});
+
+// 2. Endpoint yêu cầu xác thực Bearer Token JWT (stateless)
+app.MapGet(&quot;/me&quot;, (ClaimsPrincipal user) =&gt; Results.Ok(new { ok = true }))
+   .RequireAuthorization(); // Tự động kiểm tra Bearer JWT, trả về 401 nếu thiếu/hết hạn</code></pre>
           </div>
         </div>
       </section>
@@ -2489,7 +2594,7 @@ def me(_=Depends(require_token)):
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">func cors(next http.Handler) http.Handler {
@@ -2520,6 +2625,21 @@ app.add_middleware(
     allow_credentials=True,
     max_age=86400,                           # cache quyền phê duyệt trong 24h
 )</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Cấu hình CORS và xử lý Preflight (OPTIONS)
+builder.Services.AddCors(options =&gt; {
+    options.AddDefaultPolicy(policy =&gt; {
+        policy.WithOrigins(&quot;https://example.com&quot;) // Origin chính xác khi bật Credentials
+              .WithMethods(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;PATCH&quot;, &quot;DELETE&quot;)
+              .WithHeaders(&quot;Content-Type&quot;, &quot;Authorization&quot;)
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache quyền preflight trong 24h
+    });
+});
+
+var app = builder.Build();
+app.UseCors(); // Middleware tự động xử lý request OPTIONS và các header CORS</code></pre>
           </div>
         </div>
 
@@ -2794,7 +2914,7 @@ app.add_middleware(
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">func getUser(w http.ResponseWriter, r *http.Request) {
@@ -2827,6 +2947,25 @@ def get_user(id: int, authorization: str = Header(default="")):
     if not user.visible_to(authorization):
         raise HTTPException(403, "forbidden")           # 403: không có quyền truy cập
     return user                                         # 200: thành công</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8 (Minimal APIs): Ánh xạ chính xác các mã trạng thái
+app.MapGet(&quot;/users/{id:int}&quot;, (int id, HttpContext ctx) =&gt; {
+    if (!ctx.Request.Headers.ContainsKey(&quot;Authorization&quot;)) {
+        return Results.Unauthorized();                    // 401: Bạn là ai? (chưa xác thực)
+    }
+
+    var user = db.Find(id);
+    if (user is null) {
+        return Results.NotFound(new { error = &quot;no such user&quot; }); // 404: Không tìm thấy user
+    }
+
+    if (!user.IsVisibleTo(ctx.User)) {
+        return Results.Forbid();                          // 403: Đã biết bạn là ai, nhưng cấm truy cập
+    }
+
+    return Results.Ok(user);                              // 200: Thành công
+});</code></pre>
           </div>
         </div>
       </section>
@@ -3006,7 +3145,7 @@ def get_user(id: int, authorization: str = Header(default="")):
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">// Chuyển hướng vĩnh viễn bắt buộc giữ nguyên method/body -> 308
@@ -3033,6 +3172,18 @@ def old_route(id: int):
 def submit_form():
     rid = save()
     return RedirectResponse(f"/results/{rid}", status_code=303)  # ép chuyển sang GET</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Chuyển hướng giữ nguyên method (308) hoặc ép sang GET (303)
+// 1. Chuyển hướng vĩnh viễn bắt buộc giữ nguyên method/body -&gt; 308 Permanent Redirect
+app.MapMethods(&quot;/user/{id:int}&quot;, [&quot;GET&quot;, &quot;POST&quot;], (int id) =&gt;
+    Results.Redirect($&quot;/person/{id}&quot;, permanent: true, preserveMethod: true));
+
+// 2. Post/Redirect/Get -&gt; 303 See Other để trình duyệt refresh không bị re-POST form
+app.MapPost(&quot;/submit&quot;, (SubmitForm form) =&gt; {
+    var id = Save(form);
+    return Results.SeeOther($&quot;/results/{id}&quot;); // 303 (ép chuyển sang GET)
+});</code></pre>
           </div>
         </div>
       </section>
@@ -3166,7 +3317,7 @@ def submit_form():
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">func getResource(w http.ResponseWriter, r *http.Request) {
@@ -3197,6 +3348,22 @@ def get_resource(request: Request):
 
     return Response(content=body, status_code=200,
                     headers={"ETag": etag, "Cache-Control": "max-age=10"})</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Thẩm định ETag và phản hồi 304 Not Modified
+app.MapGet(&quot;/resource&quot;, (HttpContext ctx) =&gt; {
+    byte[] body = LoadResource();
+    var hash = SHA256.HashData(body);
+    var etag = $&quot;\&quot;{Convert.ToHexString(hash)[..16]}\&quot;&quot;; // Dấu vân tay của nội dung
+
+    if (ctx.Request.Headers.IfNoneMatch == etag) {
+        return Results.StatusCode(StatusCodes.Status304NotModified); // 304: Tiết kiệm toàn bộ payload
+    }
+
+    ctx.Response.Headers.ETag = etag;
+    ctx.Response.Headers.CacheControl = &quot;max-age=10&quot;;
+    return Results.Bytes(body, &quot;application/json&quot;);                  // 200 + body
+});</code></pre>
           </div>
         </div>
         <div class="box note"><span class="tag">Thực tế triển khai + Cái bẫy của header Vary</span>
@@ -3354,7 +3521,7 @@ def get_resource(request: Request):
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">func updateDoc(w http.ResponseWriter, r *http.Request) {
@@ -3389,6 +3556,28 @@ def update_doc(id: int, request: Request, if_match: str = Header(default="")):
     doc.etag = new_etag()                     # tăng phiên bản (bump version)
     db.save(doc)
     return Response(status_code=200, headers={"ETag": doc.etag})</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Khóa lạc quan với If-Match chống xung đột ghi đè
+app.MapPut(&quot;/doc/{id:int}&quot;, async (int id, HttpContext ctx) =&gt; {
+    var doc = db.Get(id);
+    var ifMatch = ctx.Request.Headers.IfMatch.ToString(); // ETag mà client nhìn thấy gần nhất
+
+    if (string.IsNullOrEmpty(ifMatch)) {
+        return Results.BadRequest(&quot;If-Match required&quot;);
+    }
+
+    if (ifMatch != doc.ETag) {
+        return Results.StatusCode(StatusCodes.Status412PreconditionFailed); // 412: Đã có ai đó sửa trước
+    }
+
+    await doc.ApplyAsync(ctx.Request.Body);
+    doc.ETag = NewETag();                                 // Tăng phiên bản (bump version)
+    db.Save(doc);
+
+    ctx.Response.Headers.ETag = doc.ETag;
+    return Results.Ok();
+});</code></pre>
           </div>
         </div>
       </section>
@@ -3519,7 +3708,7 @@ def update_doc(id: int, request: Request, if_match: str = Header(default="")):
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">func handler(w http.ResponseWriter, r *http.Request) {
@@ -3548,6 +3737,21 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 def greeting(accept_language: str = Header(default="en")):
     lang = "es" if accept_language.startswith("es") else "en"
     return {"en": "Hello", "es": "Hola"}[lang]</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Cấu hình nén phản hồi (Response Compression)
+builder.Services.AddResponseCompression(options =&gt; {
+    options.EnableForHttps = true; // Bật nén qua HTTPS
+});
+
+var app = builder.Build();
+app.UseResponseCompression(); // Tự động thương lượng Accept-Encoding (gzip, br) và nén payload
+
+app.MapGet(&quot;/greeting&quot;, (HttpContext ctx) =&gt; {
+    var lang = ctx.Request.Headers.AcceptLanguage.ToString().StartsWith(&quot;es&quot;) ? &quot;es&quot; : &quot;en&quot;;
+    var msg = lang == &quot;es&quot; ? &quot;Hola&quot; : &quot;Hello&quot;;
+    return Results.Ok(new { message = msg });
+});</code></pre>
           </div>
         </div>
       </section>
@@ -3656,7 +3860,7 @@ Content-Length: 48977</code></pre>
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">// http.ServeContent tự động xử lý Range, 206, 416 và If-Range giúp bạn,
@@ -3675,6 +3879,17 @@ from fastapi.responses import FileResponse
 @app.get("/big.zip")
 def download():
     return FileResponse("big.zip", media_type="application/zip")</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8: Phục vụ Range Requests (mã 206) với Results.File
+app.MapGet(&quot;/big.zip&quot;, () =&gt; {
+    // enableRangeProcessing: true kích hoạt hỗ trợ dải byte (Range) và trả về 206 Partial Content
+    return Results.File(
+        path: Path.Combine(Directory.GetCurrentDirectory(), &quot;big.zip&quot;),
+        contentType: &quot;application/zip&quot;,
+        enableRangeProcessing: true
+    );
+});</code></pre>
           </div>
         </div>
       </section>
@@ -3770,7 +3985,7 @@ def download():
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">srv := &http.Server{
@@ -3790,6 +4005,21 @@ srv.ListenAndServe()
 import uvicorn
 uvicorn.run("main:app", host="0.0.0.0", port=8080,
             timeout_keep_alive=60, workers=4)</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8 (Kestrel): Tinh chỉnh Keep-Alive timeout và chống tấn công Slowloris
+var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(serverOptions =&gt; {
+    // Thời gian duy trì kết nối keep-alive nhàn rỗi (idle)
+    serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(60);
+    // Giảm thiểu tấn công Slowloris (giới hạn thời gian nhận header và tốc độ tối thiểu)
+    serverOptions.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(2);
+    serverOptions.Limits.MinRequestBodyDataRate = new MinDataRate(bytesPerSecond: 100, gracePeriod: TimeSpan.FromSeconds(2));
+});
+
+var app = builder.Build();
+app.Run();</code></pre>
           </div>
         </div>
       </section>
@@ -3906,7 +4136,7 @@ Content-Type: image/png
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">// 1. Tiếp nhận file tải lên dạng multipart
@@ -3952,6 +4182,29 @@ async def stream():
             yield f"data: chunk {i}\n\n"
             await asyncio.sleep(1)
     return StreamingResponse(gen(), media_type="text/event-stream")</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8:
+// 1. Tiếp nhận file tải lên dạng multipart
+app.MapPost(&quot;/upload&quot;, async (IFormFile file) =&gt; {
+    // IFormFile tự động buffer dữ liệu vào RAM hoặc file tạm ổ đĩa
+    var tempPath = Path.GetTempFileName();
+    using var stream = File.Create(tempPath);
+    await file.CopyToAsync(stream);
+    return Results.Ok(new { received = file.FileName, size = file.Length });
+});
+
+// 2. Stream response thành từng chunk (Server-Sent Events)
+app.MapGet(&quot;/stream&quot;, async (HttpContext ctx) =&gt; {
+    ctx.Response.Headers.ContentType = &quot;text/event-stream&quot;;
+    ctx.Response.Headers.CacheControl = &quot;no-cache&quot;;
+
+    for (int i = 0; i &lt; 5; i++) {
+        await ctx.Response.WriteAsync($&quot;data: chunk {i}\n\n&quot;);
+        await ctx.Response.Body.FlushAsync(); // Đẩy ngay chunk về client mà không chờ đệm
+        await Task.Delay(1000);
+    }
+});</code></pre>
           </div>
         </div>
         <div class="box key"><span class="tag">Chiều truyền tải -&gt; công cụ tương ứng</span>
@@ -4286,7 +4539,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=</code></pre>
           <div class="code-bar">
             <div class="dots"><i></i><i></i><i></i></div>
             <div class="code-tabs"><button class="on" data-lang="go"><span class="lang-dot lang-go"></span> Go</button><button
-                data-lang="py"><span class="lang-dot lang-py"></span> Python</button></div>
+                data-lang="py"><span class="lang-dot lang-py"></span> Python</button><button data-lang="cs"><span class="lang-dot lang-cs"></span> C# .NET 8</button></div>
           </div>
           <div class="code-panel on" data-panel="go">
             <pre><code class="language-go">// Phục vụ HTTPS trực tiếp với cặp chứng chỉ (certificate) + khóa bí mật (private key).
@@ -4303,6 +4556,21 @@ import uvicorn
 uvicorn.run("main:app", host="0.0.0.0", port=443,
             ssl_certfile="server.crt", ssl_keyfile="server.key")
 # Lưu ý production: thông thường terminate TLS tại proxy/LB và chạy HTTP thường ở phía sau.</code></pre>
+          </div>
+                  <div class="code-panel" data-panel="cs">
+            <pre><code class="language-csharp">// C# .NET 8 (Kestrel): Phục vụ TLS trực tiếp với cặp cert + private key
+var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(serverOptions =&gt; {
+    serverOptions.ListenAnyIP(443, listenOptions =&gt; {
+        // Tải chứng chỉ X.509 từ server.crt và server.key
+        listenOptions.UseHttps(X509Certificate2.CreateFromPemFile(&quot;server.crt&quot;, &quot;server.key&quot;));
+    });
+});
+
+var app = builder.Build();
+app.Run();
+// Lưu ý production: thông thường bạn sẽ terminate TLS tại Reverse Proxy/LB và chạy HTTP phía sau.</code></pre>
           </div>
         </div>
       </section>
